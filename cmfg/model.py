@@ -5,16 +5,18 @@ from mesa.space import Grid
 from cmfg.node_manager import Node
 from cmfg.order_dispatcher import OrderManager
 
+from mesa.datacollection import DataCollector
+
 import numpy as np
 
 DEBUG = False
-LAST_STEP = 100
+LAST_STEP = 30
 
 
 # Hyperparameters
 model_height = 20
 model_width = 20
-no_nodes = 30
+no_nodes = 50
 
 # Start of datacollector functions
 # Platform
@@ -23,6 +25,41 @@ def platform_capacity(model):
     node_capacity = [a.capacity for a in model.schedule.agents]
     return np.sum(node_capacity)
 
+#Statistics for datacollector
+def getPlatformOverallCapacity(self):
+    return self.platform_overall_capacity
+
+def getPlatformUtilizationRate(model):
+    overall_capacity = model.platform_overall_capacity
+    current_capacity = platform_capacity(model)
+    utilization_rate = round(round((overall_capacity - current_capacity)/overall_capacity,2)*100,2)
+    return utilization_rate
+
+def getCurrentServiceOrder(model):
+    return service_request_analysis(model)['service_requests_len']
+
+def getCurrentServiceRequests(model):
+    return service_request_analysis(model)['services_capacity_request']
+
+def getCurrentServiceQueued(model):
+    return service_request_analysis(model)['service_queued_requests_len']
+
+def getCurrentCapacityQueued(model):
+    return service_request_analysis(model)['services_queued_request']
+
+def getCurrentServiceRunning(model):
+    return service_request_analysis(model)['services_running_len']
+
+def getCurrentRunningCapacity(model):
+    return service_request_analysis(model)['services_running_capacity']
+
+def getCurrentCompletedServices(model):
+    return service_request_analysis(model)['services_completed_len']
+
+def getCurrentCompletedCapacity(model):
+    return service_request_analysis(model)['services_capacity_completed']
+
+#Statistics for log
 def platform_utilization_rate(model):
     """platform overall capacity / platform current capacity"""
     overall_capacity = model.platform_overall_capacity
@@ -121,6 +158,20 @@ class SMfgModel(Model):
             self.schedule.add(node)
 
         self.platform_overall_capacity = platform_capacity(self)
+        self.datacollector = DataCollector(
+            model_reporters={
+                "Platform Overall Capacity": getPlatformOverallCapacity,
+                "Platform Current Capacity": platform_capacity,
+                "Utilization Rate": getPlatformUtilizationRate,
+                "Service Orders": getCurrentServiceOrder,
+                "Service Capacity Request": getCurrentServiceRequests,
+                "Service Queued": getCurrentServiceQueued,
+                "Capacity Queued": getCurrentCapacityQueued,
+                "Running Services": getCurrentServiceRunning,
+                "Running Capacity": getCurrentRunningCapacity
+                },  
+            agent_reporters={"Capacity": "pos"})
+
         print("::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
         print(f"Created a platform with capacity: {self.platform_overall_capacity}")
         self.running = True
@@ -131,6 +182,7 @@ class SMfgModel(Model):
         '''
         self.order_schedule.step()
         self.schedule.step()
+        self.datacollector.collect(self)
         utilization_rate,overall_capacity = platform_utilization_rate(self)
         analytics = service_request_analysis(self) 
         print(f"[{self.clock}]: Platform Current Capacity: {platform_capacity(self)}|{overall_capacity} - ({utilization_rate}) % utilization rate")

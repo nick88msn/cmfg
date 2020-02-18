@@ -8,7 +8,7 @@ DEBUG = False
 
 '''HYPERPARAMETER'''
 MIN_ORDER_QTY = 1
-MAX_ORDER_QTY = 50
+MAX_ORDER_QTY = 20
 UNIT_PRICE = round(random.uniform(6,25),2)
 MACHINE_TIME = random.randint(1,4)
 LOGISTICS_UNIT_COST_PCG = round(random.uniform(0.005,0.02),4)
@@ -401,10 +401,11 @@ class OrderManager(Agent):
             for service in self.order_queue:
                 manageServiceRequests(self,service)            #collect availability responses from nodes for each service and put in a schedule dictionary
 
+'''
         if self.hasCompletedServices:
             for service in self.order_archive:
                 if self.model.clock == self.model.last_step - 1:
                     getServiceGantt(self,service)
-
         if DEBUG:
             print(f"Node Manager has advanced step")
+'''
