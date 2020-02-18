@@ -16,7 +16,7 @@ LAST_STEP = 30
 # Hyperparameters
 model_height = 20
 model_width = 20
-no_nodes = 50
+no_nodes = 20
 
 # Start of datacollector functions
 # Platform
@@ -59,6 +59,12 @@ def getCurrentCompletedServices(model):
 def getCurrentCompletedCapacity(model):
     return service_request_analysis(model)['services_capacity_completed']
 
+def getCurrentRejectedServices(model):
+    return service_request_analysis(model)['services_rejected_len']
+
+def getCurrentRejectedCapacity(model):
+    return service_request_analysis(model)['services_capacity_rejected']
+
 #Statistics for log
 def platform_utilization_rate(model):
     """platform overall capacity / platform current capacity"""
@@ -79,6 +85,7 @@ def service_request_analysis(model):
     services_queued_capacity = 0
     services_capacity_rejected = 0
     services_capacity_completed = 0
+    #TODO è sbagliato calcolarlo come capacità dei servizi processati ma andrebbe calcolato come la somma dei task che stanno in running associati al servizio
     services_running_capacity = 0
     services_rejected = []
     services_running = []
@@ -168,7 +175,11 @@ class SMfgModel(Model):
                 "Service Queued": getCurrentServiceQueued,
                 "Capacity Queued": getCurrentCapacityQueued,
                 "Running Services": getCurrentServiceRunning,
-                "Running Capacity": getCurrentRunningCapacity
+                "Running Capacity": getCurrentRunningCapacity,
+                "Completed Services": getCurrentCompletedServices,
+                "Completed Capacity": getCurrentCompletedCapacity,
+                "Rejected Services": getCurrentRejectedServices,
+                "Rejected Capacity": getCurrentRejectedCapacity
                 },  
             agent_reporters={"Capacity": "pos"})
 
