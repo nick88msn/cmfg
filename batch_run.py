@@ -1,5 +1,5 @@
 import dash
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 import dash_core_components as dcc
 import dash_html_components as html
 from collections import deque
@@ -14,9 +14,14 @@ import datetime as dt
 
 from cmfg.model import SMfgModel, LAST_STEP, no_nodes, model_height, model_width
 
-GRAPH_UPDATE = 50
+GRAPH_UPDATE = 20       #axis range and data interval of graphs
+TIMEOUT = 1            #cache timeout
+UPDATE_INTERVAL = 2    #graphs update interval 
+
 
 model = SMfgModel()
+no_nodes = no_nodes
+
 
 #DATACOLLECTOR
 #get model data collected
@@ -28,19 +33,13 @@ print(data)
 node_managers = model.datacollector.get_agent_vars_dataframe()
 print(node_managers)
 
-
-
-#MAP
+#MAP data
 mapbox_access_token = secrets.MAPBOX_PUBLIC_TOKEN
-no_nodes = no_nodes
-fig = go.Figure()
-
 origin_dict = {
-        'Rome': (41.9028,12.4964),
-        'London': (51.5074,0.1278),
-        'New York': (40.7128, -74.0060)
-        }
-
+    'Rome': (41.9028,12.4964),
+    'London': (51.5074,0.1278),
+    'New York': (40.7128, -74.0060)
+}
 origin = origin_dict['Rome']
 nodes = [a for a in model.schedule.agents]
 nodes_pos = [a.pos for a in nodes]
@@ -56,63 +55,21 @@ capacities = [a.capacity for a in nodes]
 node_names = [a.id for a in nodes]
 labels = u.getLabels(node_names,sizes,capacities)
 
-map_fig = go.Figure()
+#Creating the server
+app = dash.Dash(meta_tags = 
+                [{'name':"viewport", 'content':"width=device-width, initial-scale=1"}])
 
-#Actual Map
-map_fig.add_trace(go.Scattermapbox(
-            lat=latitudes,
-            lon=longitudes,
-            mode='markers',
-            marker=go.scattermapbox.Marker(
-                size=sizes,
-                color='red'
-            ),
-            text=labels,
-            hoverinfo='text'
-        )
-)
+#localhost
+app.scripts.config.serve_locally=True
 
-map_fig.add_trace(go.Scattermapbox(
-            lat=latitudes,
-            lon=longitudes,
-            mode='markers',
-            marker=go.scattermapbox.Marker(
-                size=capacities,
-                color='#ffffff',
-                opacity=0.7
-            ),
-            hoverinfo='none',
-        )
-)
-
-map_fig.update_layout(
-        showlegend = False,
-        hovermode='closest',
-        #autosize = False,
-        #width = 500,
-        #height = 500,
-        title='Manufacturing Network',
-        mapbox=dict(
-            accesstoken=mapbox_access_token,
-            bearing=0,
-            center=go.layout.mapbox.Center(
-                lat=origin[0],
-                lon=origin[1]
-            ),
-            pitch=0,
-            zoom=9
-        )
-)
-
-app = dash.Dash()
+#Adding a cache 
 cache = Cache(app.server, config={
     'CACHE_TYPE': 'filesystem',
     'CACHE_DIR': 'cache-directory'
 })
 app.config.suppress_callback_exceptions = True
-TIMEOUT = 3
 cache.clear()
-
+#Caching Generator
 @cache.memoize(timeout=TIMEOUT)
 def query_data():
     # This could be an expensive data querying step
@@ -121,45 +78,43 @@ def query_data():
     data = model.datacollector.get_model_vars_dataframe()[-GRAPH_UPDATE:]
 
     #get agent data collected
-    node_managers = model.datacollector.get_agent_vars_dataframe()[-GRAPH_UPDATE:]
-    now = dt.datetime.now()
-    #node_managers['time'] = [now - dt.timedelta(seconds=5*i) for i in range(len(node_managers))]
+    #now = dt.datetime.now()
     #data['time'] = [now - dt.timedelta(seconds=5*i) for i in range(len(data))]
 
-    return data, node_managers
+    return data
 
+@cache.memoize(timeout=TIMEOUT)
+def query_nodes():
+    # This could be an expensive data querying step
+    capacities = [a.capacity for a in nodes]
+    labels = u.getLabels(node_names,sizes,capacities)
+    return capacities, labels
 
+#Frontend
 app.layout = html.Div(children=[
     html.H1('Dashboard'),
-    html.Div(id = 'mapbox', children=[
-        dcc.Graph(id='plot', figure=map_fig)
-    ]),
+    html.Div(id = 'mapbox', children=[]),
+    dcc.Interval(id='map-update', interval= 3 * UPDATE_INTERVAL * 1000),
     html.Div(id = 'capacity-graph-div', children=[]),
     html.Div(id = 'service-analysis-div', children=[]),
     html.Div(id = 'order-analysis-div', children=[]),
     html.Div(id = 'completed-order-div', children=[]),
     html.Div(id = 'completed-capacity-div', children=[]),
-    dcc.Interval(id='graph-update', interval= 3 * 1000)     
+    dcc.Interval(id='graph-update', interval= UPDATE_INTERVAL * 1000),
+    # hidden signal value
+    html.Div(id='signal', style={'display': 'none'})  
 ])
 
-@app.callback([
-    Output('capacity-graph-div', 'children'),
-    Output('service-analysis-div', 'children'),
-    Output('order-analysis-div', 'children'),
-    Output('completed-order-div', 'children'),
-    Output('completed-capacity-div', 'children')
-    ], 
-    [
-        Input("graph-update", "n_intervals")
-        ])
-def updateModel(_):
+#CALLBACK FUNCTION
+@app.callback(Output('signal', 'children'), [Input("graph-update", "n_intervals")])
+def updateData(_):
     #BATCHRUNNING THE MODEL
-    for _ in range(1):
-        model.step()
-
-    data, node_managers = query_data()
-
-    #GRAPHS & FIGURES
+        for _ in range(1):
+            model.step()
+    
+@app.callback(Output('capacity-graph-div', 'children'), [Input("map-update", "n_intervals")])
+def updateCapacityGraph(_):
+    data = query_data()
     #Capacity Figure
     capacity_fig = go.Figure()
     capacity_fig.add_trace(
@@ -173,6 +128,13 @@ def updateModel(_):
         xaxis=dict(range=[min(data.index), max(data.index)]), yaxis=dict(range=[0, max(data['Platform Overall Capacity']) + 10])
     )
     capacity_graph = dcc.Graph(id = 'capacity-graph', figure = capacity_fig, animate=True)
+    #END GRAPHS
+
+    return capacity_graph
+
+@app.callback(Output('service-analysis-div', 'children'), [Input("map-update", "n_intervals")])
+def updateServiceAnalysis(_):
+    data = query_data()
 
     #Service Analysis Figure
     service_fig = go.Figure()
@@ -190,6 +152,12 @@ def updateModel(_):
         xaxis=dict(range=[min(data.index), max(data.index)]), yaxis=dict(range=[0, max(max(data['Service Capacity Request']), max(data['Capacity Queued']), max(data['Running Capacity'])) + 10])
     )
     service_analysis_graph = dcc.Graph(id = 'service-analysis-graph', figure = service_fig)
+
+    return service_analysis_graph
+
+@app.callback(Output('order-analysis-div', 'children'), [Input("map-update", "n_intervals")])
+def updateOrderAnalysisGraph(_):
+    data = query_data()
 
     #Order Analysis Figure
     order_fig = go.Figure()
@@ -210,6 +178,11 @@ def updateModel(_):
 
     order_analysis_graph = dcc.Graph(id = 'order-analysis-graph', figure = order_fig)
 
+    return order_analysis_graph
+
+@app.callback(Output('completed-order-div', 'children'), [Input("map-update", "n_intervals")])
+def updateCompletedOrderGraph(_):
+    data = query_data()
     #Completed vs Rejected Orders -> Figure
     completed_order_fig = go.Figure()
     completed_order_fig.add_trace(
@@ -225,6 +198,11 @@ def updateModel(_):
     )
     completed_order_graph = dcc.Graph(id = 'completed-orders-graph', figure = completed_order_fig)
 
+    return completed_order_graph
+
+@app.callback(Output('completed-capacity-div', 'children'), [Input("map-update", "n_intervals")])
+def updateCapacityCompleted(_):
+    data = query_data()
     #Completed vs Rejected Capacity -> 
     completed_capacity_fig = go.Figure()
     completed_capacity_fig.add_trace(
@@ -241,7 +219,65 @@ def updateModel(_):
     completed_capacity_graph = dcc.Graph(id = 'completed-capacity-graph', figure = completed_capacity_fig)
     #END GRAPHS
 
-    return capacity_graph, service_analysis_graph, order_analysis_graph, completed_order_graph, completed_capacity_graph
+    return completed_capacity_graph
+
+#MAP CALLBACK
+@app.callback(Output('mapbox', 'children'), [Input("map-update", "n_intervals")])
+def updateMap(_):
+    #MAP
+    map_fig = go.Figure()
+    global latitudes, longitudes, sizes
+    capacities, labels = query_nodes()
+
+    #Actual Map
+    map_fig.add_trace(go.Scattermapbox(
+                lat=latitudes,
+                lon=longitudes,
+                mode='markers',
+                marker=go.scattermapbox.Marker(
+                    size=sizes,
+                    color='red'
+                ),
+                text=labels,
+                hoverinfo='text'
+            )
+    )
+
+    map_fig.add_trace(go.Scattermapbox(
+                lat=latitudes,
+                lon=longitudes,
+                mode='markers',
+                marker=go.scattermapbox.Marker(
+                    size=capacities,
+                    color='#ffffff',
+                    opacity=0.7
+                ),
+                hoverinfo='none',
+            ))
+    
+    map_fig.update_layout(
+            showlegend = False,
+            hovermode='closest',
+            #autosize = False,
+            #width = 500,
+            #height = 500,
+            title='Manufacturing Network',
+            uirevision= False,
+            mapbox=dict(
+                accesstoken=mapbox_access_token,
+                bearing=0,
+                center=go.layout.mapbox.Center(
+                    lat=origin[0],
+                    lon=origin[1]
+                ),
+                pitch=0,
+                zoom=9
+            )
+    )
+
+    map_graph = dcc.Graph(id='plot', figure=map_fig)
+
+    return map_graph
 
 if __name__ == '__main__':
     app.run_server(debug=True,threaded=True)
