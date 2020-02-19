@@ -17,6 +17,8 @@ dash-renderer = "*"
 dash-html-components = "*"
 dash-core-components = "*"
 plotly = "*"
+Flask = "*"
+Flask-Caching = "*"
 
 [requires]
 python_version = "3.6"

@@ -16,7 +16,7 @@ LAST_STEP = 30
 # Hyperparameters
 model_height = 20
 model_width = 20
-no_nodes = 20
+no_nodes = 50
 
 # Start of datacollector functions
 # Platform

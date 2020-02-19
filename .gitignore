@@ -1,0 +1,3 @@
+secrets.py
+cache-directory/*
+__pycache__/*
