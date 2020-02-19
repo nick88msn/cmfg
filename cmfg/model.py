@@ -181,7 +181,12 @@ class SMfgModel(Model):
                 "Rejected Services": getCurrentRejectedServices,
                 "Rejected Capacity": getCurrentRejectedCapacity
                 },  
-            agent_reporters={"Capacity": "pos"})
+            agent_reporters={
+                'ID': 'id',
+                'Location': 'pos',
+                'Full Capacity': 'initial_capacity',
+                'Current Capacity': 'capacity'
+                })
 
         print("::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
         print(f"Created a platform with capacity: {self.platform_overall_capacity}")

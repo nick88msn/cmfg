@@ -19,8 +19,8 @@ data = model.datacollector.get_model_vars_dataframe()
 print(data)
 
 #get agent data collected
-agent_capacity = model.datacollector.get_agent_vars_dataframe()
-print(agent_capacity.head())
+node_managers = model.datacollector.get_agent_vars_dataframe()
+print(node_managers)
 
 #Capacity Figure
 capacity_fig = go.Figure()
