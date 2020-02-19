@@ -14,14 +14,13 @@ import datetime as dt
 
 from cmfg.model import SMfgModel, LAST_STEP, no_nodes, model_height, model_width
 
-GRAPH_UPDATE = 20       #axis range and data interval of graphs
-TIMEOUT = 1            #cache timeout
-UPDATE_INTERVAL = 2    #graphs update interval 
+GRAPH_UPDATE = 10       #axis range and data interval of graphs
+TIMEOUT = 3            #cache timeout
+UPDATE_INTERVAL = 5    #graphs update interval 
 
 
 model = SMfgModel()
 no_nodes = no_nodes
-
 
 #DATACOLLECTOR
 #get model data collected
@@ -94,7 +93,7 @@ def query_nodes():
 app.layout = html.Div(children=[
     html.H1('Dashboard'),
     html.Div(id = 'mapbox', children=[]),
-    dcc.Interval(id='map-update', interval= 3 * UPDATE_INTERVAL * 1000),
+    dcc.Interval(id='map-update', interval= 2 * UPDATE_INTERVAL * 1000),
     html.Div(id = 'capacity-graph-div', children=[]),
     html.Div(id = 'service-analysis-div', children=[]),
     html.Div(id = 'order-analysis-div', children=[]),
@@ -109,8 +108,10 @@ app.layout = html.Div(children=[
 @app.callback(Output('signal', 'children'), [Input("graph-update", "n_intervals")])
 def updateData(_):
     #BATCHRUNNING THE MODEL
-        for _ in range(1):
-            model.step()
+    if model.clock % 50:
+        cache.clear()
+    for _ in range(1):
+        model.step()
     
 @app.callback(Output('capacity-graph-div', 'children'), [Input("map-update", "n_intervals")])
 def updateCapacityGraph(_):
@@ -280,4 +281,4 @@ def updateMap(_):
     return map_graph
 
 if __name__ == '__main__':
-    app.run_server(debug=True,threaded=True)
+    app.run_server(debug=False,threaded=True)
