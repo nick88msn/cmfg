@@ -11,7 +11,6 @@ from mesa.datacollection import DataCollector
 DEBUG = False
 LAST_STEP = 30
 
-
 # Hyperparameters
 model_height = 20
 model_width = 20
@@ -99,8 +98,8 @@ class SMfgModel(Model):
         print(f"[{self.clock}]: Running Services: {analytics['services_running_len']} | Running Capacity: {analytics['services_running_capacity']}")
         print(f"[{self.clock}]: Completed Services: {analytics['services_completed_len']} | Completed Capacity: {analytics['services_capacity_completed']}")
         print(f"[{self.clock}]: Rejected Services: {analytics['services_rejected_len']} | Rejected Capacity: {analytics['services_capacity_rejected']}")
-        self.clock += 1
         print("::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
+        self.clock += 1
         '''
         Evolutionary model...randomly it should create new node near busiest area
         Make a revenue - cost balance for nodes. If things goes ok it should invest in new capacity if things go wrong reduce capacity till its dead

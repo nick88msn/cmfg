@@ -13,12 +13,13 @@ import datetime as dt
 
 from cmfg.model import SMfgModel, LAST_STEP, no_nodes, model_height, model_width
 
+import cProfile
+
 RUN_SERVER = False
 
 GRAPH_UPDATE = 25       #axis range and data interval of graphs
 TIMEOUT = 8            #cache timeout
 UPDATE_INTERVAL = 2    #graphs update interval 
-
 
 model = SMfgModel()
 
@@ -29,29 +30,31 @@ data = model.datacollector.get_model_vars_dataframe()
 #get agent data collected
 node_managers = model.datacollector.get_agent_vars_dataframe()
 print(node_managers)
-#MAP data
-mapbox_access_token = secrets.MAPBOX_PUBLIC_TOKEN
-origin_dict = {
-    'Rome': (41.9028,12.4964),
-    'London': (51.5074,0.1278),
-    'New York': (40.7128, -74.0060)
-}
-origin = origin_dict['Rome']
-nodes = [a for a in model.schedule.agents]
-nodes_pos = [a.pos for a in nodes]
-latitudes = []
-longitudes = []
-for positions in nodes_pos:
-    lat, lon = u.getPointFromDistance(point1=(0,0),point2=(positions[0],positions[1]), origin=origin, grid=(model_width,model_height))
-    latitudes.append(lat)
-    longitudes.append(lon)
-
-sizes = [a.initial_capacity for a in nodes]
-capacities = [a.capacity for a in nodes]
-node_names = [a.id for a in nodes]
-labels = u.getLabels(node_names,sizes,capacities)
 
 if RUN_SERVER:
+    #MAP data
+    mapbox_access_token = secrets.MAPBOX_PUBLIC_TOKEN
+    origin_dict = {
+        'Rome': (41.9028,12.4964),
+        'London': (51.5074,0.1278),
+        'New York': (40.7128, -74.0060),
+        'Salerno': (40.67545, 14.79328)
+    }
+    origin = origin_dict['Rome']
+    nodes = [a for a in model.schedule.agents]
+    nodes_pos = [a.pos for a in nodes]
+    latitudes = []
+    longitudes = []
+    for positions in nodes_pos:
+        lat, lon = u.getPointFromDistance(point1=(0,0),point2=(positions[0],positions[1]), origin=origin, grid=(model_width,model_height))
+        latitudes.append(lat)
+        longitudes.append(lon)
+
+    sizes = [a.initial_capacity for a in nodes]
+    capacities = [a.capacity for a in nodes]
+    node_names = [a.id for a in nodes]
+    labels = u.getLabels(node_names,sizes,capacities)
+
     #Creating the server
     app = dash.Dash(meta_tags = 
                     [{'name':"viewport", 'content':"width=device-width, initial-scale=1"}])
@@ -282,6 +285,7 @@ if RUN_SERVER:
         app.run_server(debug=False,threaded=True)
 else:
     while True:
+        #cProfile.run("model.step()")
         model.step()
         node_managers = model.datacollector.get_agent_vars_dataframe()
         print(node_managers.tail())
