@@ -1,3 +1,4 @@
 secrets.py
 cache-directory/*
 __pycache__/*
+cmfg/__pycache__/*

@@ -186,16 +186,19 @@ def updateNodeCosts(self):
 def bookKeeping(self):
     updateNodeRevenues(self)
     updateNodeCosts(self)
-    print(f'{self.id} -----> {self.balance}')
+    if DEBUG:
+        print(f'{self.id} -----> {self.balance}')
     current_balance = round(self.balance['revenue'] - self.balance['costs']['fixed_costs'] - self.balance['costs']['manufacturing_costs'] - self.balance['costs']['overhead_costs'],2)
-    print(f'{self.id} -----> Current Balance = {current_balance}')
+    if DEBUG:
+        print(f'{self.id} -----> Current Balance = {current_balance}')
     #Estimating Break Even Point
     if self.balance['processed_quantities'] > 0:
         fixed_costs = (self.balance['costs']['capital_investment'] + self.balance['costs']['fixed_costs'] / self.balance['processed_quantities'])
         unit_revenue = self.balance['revenue'] / self.balance['processed_quantities']
         variable_costs =  (self.balance['costs']['manufacturing_costs'] - self.balance['costs']['overhead_costs']) / self.balance['processed_quantities']
         break_even = round(fixed_costs / (unit_revenue - variable_costs),2)
-        print(f'{self.id} -----> Estimated Break Even Point = {break_even}')
+        if DEBUG:
+            print(f'{self.id} -----> Estimated Break Even Point = {break_even}')
 
 class Node(Agent):
     '''Represents a single service demander or service provider in the simulation.'''
@@ -322,5 +325,9 @@ class Node(Agent):
             if DEBUG:
                 print(f"[NODE MANAGER] => Agent {self.id} has completed {len(self.tasks_archive)} task(s) @t={self.model.clock}|ADVANCE")
         
+        bookKeeping(self)
+        '''
+        #Update book keeping only at last step
         if self.model.clock == self.model.last_step - 1:
             bookKeeping(self)
+        '''
