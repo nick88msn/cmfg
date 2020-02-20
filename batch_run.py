@@ -93,6 +93,11 @@ if RUN_SERVER:
     #Frontend
     app.layout = html.Div(children=[
         html.H1('Dashboard'),
+        html.Div(id = 'widgets', children=[
+            html.H4(f'No. nodes: {len(nodes)}'),
+            html.H4(f'Area width: {model_width} km'),
+            html.H4(f'Area height: {model_height} km')
+        ]),
         html.Div(id = 'mapbox', children=[]),
         dcc.Interval(id='map-update', interval= 5 * UPDATE_INTERVAL * 1000),
         dcc.Tabs(id='tabs-home', children=[
