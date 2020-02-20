@@ -15,7 +15,7 @@ from cmfg.model import SMfgModel, LAST_STEP, no_nodes, model_height, model_width
 
 import cProfile
 
-RUN_SERVER = False
+RUN_SERVER = True
 
 GRAPH_UPDATE = 25       #axis range and data interval of graphs
 TIMEOUT = 8            #cache timeout
@@ -95,11 +95,16 @@ if RUN_SERVER:
         html.H1('Dashboard'),
         html.Div(id = 'mapbox', children=[]),
         dcc.Interval(id='map-update', interval= 5 * UPDATE_INTERVAL * 1000),
-        html.Div(id = 'capacity-graph-div', children=[]),
-        html.Div(id = 'service-analysis-div', children=[]),
-        html.Div(id = 'order-analysis-div', children=[]),
-        html.Div(id = 'completed-order-div', children=[]),
-        html.Div(id = 'completed-capacity-div', children=[]),
+        dcc.Tabs(id='tabs-home', children=[
+            dcc.Tab(label="Platform", children=[
+                        html.Div(id = 'capacity-graph-div', children=[]),
+                        html.Div(id = 'service-analysis-div', children=[]),
+                        html.Div(id = 'order-analysis-div', children=[]),
+                        html.Div(id = 'completed-order-div', children=[]),
+                        html.Div(id = 'completed-capacity-div', children=[])
+            ]),
+            dcc.Tab(label="Nodes", children=[])
+        ]),
         dcc.Interval(id='graph-update', interval= UPDATE_INTERVAL * 1000),
         # hidden signal value
         html.Div(id='signal', style={'display': 'none'})  
