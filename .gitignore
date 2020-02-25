@@ -1,4 +1,5 @@
 secrets.py
-cache-directory/*
-__pycache__/*
-cmfg/__pycache__/*
+cache-directory
+__pycache__
+cmfg/__pycache__
+.vscode
