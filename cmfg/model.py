@@ -72,6 +72,7 @@ class SMfgModel(Model):
                 'Fixed Costs': a.getNodeCurrentFixedCosts,
                 'Variable Costs': a.getNodeCurrentVariableCosts,
                 'Capital Investment': a.getNodeCapitalInvestment,
+                'Processed Quantities': a.getNodeCapitalProcessedQuantitites,
                 'Current Service Requests': a.getNodeCurrentServiceRequests,
                 'Current Service Waiting': a.getNodeCurrentServiceWaiting,
                 'Tasks queue': a.getNodeTasksQueue,

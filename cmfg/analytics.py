@@ -76,6 +76,10 @@ def getNodeCapitalInvestment(agent):
     capital_investment = round(agent.balance['costs']['capital_investment'],2)
     return capital_investment
 
+def getNodeCapitalProcessedQuantitites(agent):
+    quantities = agent.balance['processed_quantities']
+    return quantities
+
 def getNodeCurrentServiceWaiting(agent):
     service_pending_queue = len(agent.service_pending_queue)
     return service_pending_queue

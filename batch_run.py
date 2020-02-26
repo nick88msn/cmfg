@@ -17,9 +17,9 @@ import cProfile
 
 RUN_SERVER = True
 
-GRAPH_UPDATE = 25       #axis range and data interval of graphs
-TIMEOUT = 8            #cache timeout
-UPDATE_INTERVAL = 2    #graphs update interval 
+GRAPH_UPDATE = 10       #axis range and data interval of graphs
+TIMEOUT = 18            #cache timeout
+UPDATE_INTERVAL = 5    #graphs update interval 
 
 model = SMfgModel()
 
@@ -101,15 +101,28 @@ if RUN_SERVER:
 
     #Frontend
     app.layout = html.Div(children=[
+        #TITLE
         html.H1('Dashboard'),
-        html.Div(id = 'widgets', children=[
-            html.H4(f'No. nodes: {len(nodes)}'),
-            html.H4(f'Area width: {model_width} km'),
-            html.H4(f'Area height: {model_height} km')
-        ]),
+        #Upper Widgets
+        html.Div(className = 'widgets', children=[
+            html.Div(className='textBox', children=[
+                html.H4(f'No. nodes: {len(nodes)}')
+                ], style={"width": "25%", "display": "inline-block", "margin-right": "-4 px", "box-sizing": "border-box", "padding": "1%"}),
+
+            html.Div(className='textBox', children=[
+                html.H4(f'Area width: {model_width} km')
+                ], style={"width": "25%", "display": "inline-block", "margin-right": "-4 px", "box-sizing": "border-box", "padding": "1%"}),
+
+            html.Div(className='textBox', children=[
+                html.H4(f'Area height: {model_height} km')
+                ], style={"width": "25%", "display": "inline-block", "margin-right": "-4 px", "box-sizing": "border-box", "padding": "1%"})
+            ], style={'width': '50%'}),
+        #MAP
         html.Div(id = 'mapbox', children=[]),
         dcc.Interval(id='map-update', interval= 5 * UPDATE_INTERVAL * 1000),
+        #TABS
         dcc.Tabs(id='tabs-home', children=[
+            #Platform tab
             dcc.Tab(label="Platform", children=[
                         html.Div(id = 'capacity-graph-div', children=[]),
                         html.Div(id = 'service-analysis-div', children=[]),
@@ -117,8 +130,10 @@ if RUN_SERVER:
                         html.Div(id = 'completed-order-div', children=[]),
                         html.Div(id = 'completed-capacity-div', children=[])
             ]),
+            #Node tab
             dcc.Tab(label="Nodes", children=[
                 dcc.Dropdown(id='nodes-list', options=[{'label': s, 'value': s} for s in node_names], value=node_names, multi=False),
+                html.Div(id='node-stats', children=[]),
                 html.Div(id='node-graphs', children=[])
             ])
         ]),
@@ -308,7 +323,7 @@ if RUN_SERVER:
     # Node Dropdown Input
     @app.callback(Output('node-graphs', 'children'), [Input("map-update", "n_intervals"), Input("nodes-list", "value")])
     def updateNodeGraphs(interval,node):
-        if interval % 10:
+        if model.clock % 20:
             cache.clear()
         if type(node) == str:
             data = getNodesInfo(node)
@@ -330,6 +345,49 @@ if RUN_SERVER:
 
         else:
             pass
+        
+    @app.callback(Output('node-stats', 'children'), [Input("map-update", "n_intervals"), Input("nodes-list", "value")])
+    def updateNodeStats(interval,node):
+        if type(node) == str:
+            stats = []
+            data = getNodesInfo(node)
+            location = data['Location'][-1]
+            current_balance = data['Balance'][-1]
+            processed_quantities = data['Processed Quantities'][-1]
+            avg_rev_per_step = round(data['Revenue'][-1] / model.clock,2)
+            avg_rev_per_unit = data['Revenue'][-1] / processed_quantities
+
+            name = html.Div(className='textBox', children=[
+                            html.H3(f'Node: {data["ID"][-1]} @{model.clock}')
+                            ])
+            stats.append(name)
+
+            pos = html.Div(className='textBox', children=[
+                            html.P(f'Location: {location}')
+                            ], style={"width": "20%", "display": "inline-block", "margin-right": "-4 px", "box-sizing": "border-box", "padding": "1%"})
+            stats.append(pos)
+
+            balance = html.Div(className='textBox', children=[
+                            html.P(f'Current Balance: {current_balance}')
+                            ], style={"width": "20%", "display": "inline-block", "margin-right": "-4 px", "box-sizing": "border-box", "padding": "1%"})
+            stats.append(balance)
+
+            quantities = html.Div(className='textBox', children=[
+                            html.P(f'Processed Items: {processed_quantities}')
+                            ], style={"width": "20%", "display": "inline-block", "margin-right": "-4 px", "box-sizing": "border-box", "padding": "1%"})
+            stats.append(quantities)
+
+            rev_per_step = html.Div(className='textBox', children=[
+                            html.P(f'Avg Revenue per step: {avg_rev_per_step}')
+                            ], style={"width": "20%", "display": "inline-block", "margin-right": "-4 px", "box-sizing": "border-box", "padding": "1%"})
+            stats.append(rev_per_step)
+
+            rev_per_unit = html.Div(className='textBox', children=[
+                            html.P(f'Avg Revenue per unit: {avg_rev_per_unit}')
+                            ], style={"width": "20%", "display": "inline-block", "margin-right": "-4 px", "box-sizing": "border-box", "padding": "1%"})
+            stats.append(rev_per_unit)
+
+            return stats
 
     if __name__ == '__main__':
         app.run_server(debug=False,threaded=True)
