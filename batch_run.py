@@ -90,6 +90,10 @@ if RUN_SERVER:
         labels = u.getLabels(node_names,sizes,capacities)
         return capacities, labels
 
+    @cache.memoize(timeout=TIMEOUT)
+    def getNodesInfo():    
+        return model.datacollector.get_agent_vars_dataframe()
+
     #Frontend
     app.layout = html.Div(children=[
         html.H1('Dashboard'),
@@ -108,10 +112,13 @@ if RUN_SERVER:
                         html.Div(id = 'completed-order-div', children=[]),
                         html.Div(id = 'completed-capacity-div', children=[])
             ]),
-            dcc.Tab(label="Nodes", children=[])
+            dcc.Tab(label="Nodes", children=[
+                dcc.Dropdown(id='nodes-list', options=[{'label': s, 'value': s} for s in node_names], value=node_names, multi=False),
+                html.Div(id='node-graphs', children=[])
+            ])
         ]),
         dcc.Interval(id='graph-update', interval= UPDATE_INTERVAL * 1000),
-        # hidden signal value
+        # dummy signal value to trigger mesa model step
         html.Div(id='signal', style={'display': 'none'})  
     ])
 
@@ -290,6 +297,19 @@ if RUN_SERVER:
         map_graph = dcc.Graph(id='plot', figure=map_fig)
 
         return map_graph
+    
+    # NODES GRAPHS
+
+    # Node Dropdown Input
+    @app.callback(Output('node-graphs', 'children'), [Input("map-update", "n_intervals"), Input("nodes-list", "value")])
+    def updateNodeGraphs(interval,node):
+        if type(node) == str:
+            df = getNodesInfo()
+            data = df.loc[df['ID'] == node]
+            print(data)
+
+        else:
+            pass
 
     if __name__ == '__main__':
         app.run_server(debug=False,threaded=True)
