@@ -91,8 +91,13 @@ if RUN_SERVER:
         return capacities, labels
 
     @cache.memoize(timeout=TIMEOUT)
-    def getNodesInfo():    
-        return model.datacollector.get_agent_vars_dataframe()
+    def getNodesInfo(node):
+        if node == '':
+            data = model.datacollector.get_agent_vars_dataframe()[-GRAPH_UPDATE * no_nodes:]
+        else:
+            df = model.datacollector.get_agent_vars_dataframe()[-GRAPH_UPDATE * no_nodes:]
+            data = df.loc[df['ID'] == node]
+        return data
 
     #Frontend
     app.layout = html.Div(children=[
@@ -124,7 +129,7 @@ if RUN_SERVER:
 
     #CALLBACK FUNCTION
     @app.callback(Output('signal', 'children'), [Input("graph-update", "n_intervals")])
-    def updateData(_):
+    def updateData(interval):
         #BATCHRUNNING THE MODEL
         if model.clock % 20:
             cache.clear()
@@ -303,16 +308,32 @@ if RUN_SERVER:
     # Node Dropdown Input
     @app.callback(Output('node-graphs', 'children'), [Input("map-update", "n_intervals"), Input("nodes-list", "value")])
     def updateNodeGraphs(interval,node):
+        if interval % 10:
+            cache.clear()
         if type(node) == str:
-            df = getNodesInfo()
-            data = df.loc[df['ID'] == node]
-            print(data)
+            data = getNodesInfo(node)
+            #Node Capacity Figure
+            node_capacity_fig = go.Figure()
+            node_capacity_fig.add_trace(
+                go.Scatter(x=data.index.get_level_values(0), y=data['Full Capacity'], fill='tozeroy', text='Node Full Capacity', name='Node Full Capacity')
+            )
+            node_capacity_fig.add_trace(
+                go.Scatter(x=data.index.get_level_values(0), y=data['Full Capacity'] - data['Current Capacity'], fill='tozeroy', text='Node Current Capacity Used', name='Node Current Capacity Used')
+            )
+            node_capacity_fig.update_layout(
+                title_text='Node Capacity',
+                xaxis=dict(range=[min(data.index.get_level_values(0)), max(data.index.get_level_values(0))]), yaxis=dict(range=[0, max(data['Full Capacity']) + 2])
+            )
+            node_capacity_graph = dcc.Graph(id='node-capacity-graph', figure=node_capacity_fig)
+
+            return node_capacity_graph
 
         else:
             pass
 
     if __name__ == '__main__':
         app.run_server(debug=False,threaded=True)
+        #cProfile.run("app.run_server(debug=False,threaded=True)")
 else:
     while True:
         #cProfile.run("model.step()")
