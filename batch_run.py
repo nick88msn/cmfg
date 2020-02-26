@@ -18,8 +18,8 @@ import cProfile
 RUN_SERVER = True
 
 GRAPH_UPDATE = 10       #axis range and data interval of graphs
-TIMEOUT = 18            #cache timeout
-UPDATE_INTERVAL = 5    #graphs update interval 
+TIMEOUT = 48            #cache timeout
+UPDATE_INTERVAL = 10    #graphs update interval 
 
 model = SMfgModel()
 
@@ -134,7 +134,8 @@ if RUN_SERVER:
             dcc.Tab(label="Nodes", children=[
                 dcc.Dropdown(id='nodes-list', options=[{'label': s, 'value': s} for s in node_names], value=node_names, multi=False),
                 html.Div(id='node-stats', children=[]),
-                html.Div(id='node-graphs', children=[])
+                html.Div(id='node-capacity-graph', children=[]),
+                html.Div(id='node-balance-graph', children=[])
             ])
         ]),
         dcc.Interval(id='graph-update', interval= UPDATE_INTERVAL * 1000),
@@ -321,10 +322,8 @@ if RUN_SERVER:
     # NODES GRAPHS
 
     # Node Dropdown Input
-    @app.callback(Output('node-graphs', 'children'), [Input("map-update", "n_intervals"), Input("nodes-list", "value")])
-    def updateNodeGraphs(interval,node):
-        if model.clock % 20:
-            cache.clear()
+    @app.callback(Output('node-capacity-graph', 'children'), [Input("map-update", "n_intervals")], [State("nodes-list", "value")])
+    def nodeCapacityGraph(interval,node):
         if type(node) == str:
             data = getNodesInfo(node)
             #Node Capacity Figure
@@ -336,7 +335,7 @@ if RUN_SERVER:
                 go.Scatter(x=data.index.get_level_values(0), y=data['Full Capacity'] - data['Current Capacity'], fill='tozeroy', text='Node Current Capacity Used', name='Node Current Capacity Used')
             )
             node_capacity_fig.update_layout(
-                title_text='Node Capacity',
+                title_text=f'Node Capacity @{model.clock}',
                 xaxis=dict(range=[min(data.index.get_level_values(0)), max(data.index.get_level_values(0))]), yaxis=dict(range=[0, max(data['Full Capacity']) + 2])
             )
             node_capacity_graph = dcc.Graph(id='node-capacity-graph', figure=node_capacity_fig)
@@ -345,7 +344,32 @@ if RUN_SERVER:
 
         else:
             pass
-        
+
+
+
+    #Node Balance Pie Chart
+    @app.callback(Output('node-balance-graph', 'children'), [Input("map-update", "n_intervals")], [State("nodes-list", "value")])
+    def NodeBalanceGraph(interval,node):
+        if type(node) == str:
+            data = getNodesInfo(node)
+            colors = ['green', 'red', 'darkorange']
+            labels = ['revenue', 'fixed costs', 'variable costs']
+            #Node Capacity Figure
+            revenue = data['Revenue'][-1]
+            fixed_costs = data['Fixed Costs'][-1]
+            variable_costs = data['Variable Costs'][-1]
+            values = [revenue, fixed_costs, variable_costs]
+            balance_pie_fig = go.Figure(data=[go.Pie(labels=labels,
+                                        values=values, hole=.3)])
+            balance_pie_fig.update_traces(hoverinfo='label+percent', textinfo='value', textfont_size=20,
+                            marker=dict(colors=colors, line=dict(color='#000000', width=2)))
+            balance_pie_fig.update_layout(title_text=f"Balance @{model.clock}")
+            node_balance_graph = dcc.Graph(id='node-balance-graph', figure=balance_pie_fig)
+            return node_balance_graph
+
+        else:
+            pass
+    
     @app.callback(Output('node-stats', 'children'), [Input("map-update", "n_intervals"), Input("nodes-list", "value")])
     def updateNodeStats(interval,node):
         if type(node) == str:
@@ -355,7 +379,7 @@ if RUN_SERVER:
             current_balance = data['Balance'][-1]
             processed_quantities = data['Processed Quantities'][-1]
             avg_rev_per_step = round(data['Revenue'][-1] / model.clock,2)
-            avg_rev_per_unit = data['Revenue'][-1] / processed_quantities
+            avg_rev_per_unit = round(data['Revenue'][-1] / processed_quantities,2)
 
             name = html.Div(className='textBox', children=[
                             html.H3(f'Node: {data["ID"][-1]} @{model.clock}')
