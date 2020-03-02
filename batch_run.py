@@ -18,8 +18,8 @@ import cProfile
 RUN_SERVER = True
 
 GRAPH_UPDATE = 10       #axis range and data interval of graphs
-TIMEOUT = 48            #cache timeout
-UPDATE_INTERVAL = 10    #graphs update interval 
+TIMEOUT = 24            #cache timeout
+UPDATE_INTERVAL = 5    #graphs update interval 
 
 model = SMfgModel()
 
@@ -143,6 +143,19 @@ if RUN_SERVER:
         html.Div(id='signal', style={'display': 'none'})  
     ])
 
+    #Utilities for graphs
+
+    def xAxisLowerRange(index):
+        if index.empty: 
+            return 0
+        else: 
+            return min(index)
+    def xAxisUpperRange(index):
+        if index.empty: 
+            return 10
+        else: 
+            return max(index)
+
     #CALLBACK FUNCTION
     @app.callback(Output('signal', 'children'), [Input("graph-update", "n_intervals")])
     def updateData(interval):
@@ -165,7 +178,7 @@ if RUN_SERVER:
         )
         capacity_fig.update_layout(
             title_text='Cloud Manufacturing Platform',
-            xaxis=dict(range=[min(data.index), max(data.index)]), yaxis=dict(range=[0, max(data['Platform Overall Capacity']) + 10])
+            xaxis=dict(range=[xAxisLowerRange(data.index), xAxisUpperRange(data.index)]), yaxis=dict(range=[0, max(0,max(data['Platform Overall Capacity'])) + 10])
         )
         capacity_graph = dcc.Graph(id = 'capacity-graph', figure = capacity_fig, animate=True)
         #END GRAPHS
@@ -189,7 +202,7 @@ if RUN_SERVER:
         )
         service_fig.update_layout(
             title_text='Service Requests',
-            xaxis=dict(range=[min(data.index), max(data.index)]), yaxis=dict(range=[0, max(max(data['Service Capacity Request']), max(data['Capacity Queued']), max(data['Running Capacity'])) + 10])
+            xaxis=dict(range=[xAxisLowerRange(data.index), xAxisUpperRange(data.index)]), yaxis=dict(range=[0, max(0,max(data['Service Capacity Request']), max(data['Capacity Queued']), max(data['Running Capacity'])) + 10])
         )
         service_analysis_graph = dcc.Graph(id = 'service-analysis-graph', figure = service_fig)
 
@@ -213,11 +226,10 @@ if RUN_SERVER:
 
         order_fig.update_layout(
             title_text='Order Requests',
-            xaxis=dict(range=[min(data.index), max(data.index) + 1]), yaxis=dict(range=[0, max(max(data['Service Orders']),max(data['Service Queued']),max(data['Running Services'])) + 10])
+            xaxis=dict(range=[xAxisLowerRange(data.index), xAxisUpperRange(data.index) + 1]), yaxis=dict(range=[0, max(0,max(data['Service Orders']),max(data['Service Queued']),max(data['Running Services'])) + 10])
         )
 
         order_analysis_graph = dcc.Graph(id = 'order-analysis-graph', figure = order_fig)
-
         return order_analysis_graph
 
     @app.callback(Output('completed-order-div', 'children'), [Input("map-update", "n_intervals")])
@@ -226,18 +238,17 @@ if RUN_SERVER:
         #Completed vs Rejected Orders -> Figure
         completed_order_fig = go.Figure()
         completed_order_fig.add_trace(
-            go.Bar(x=data.index[-GRAPH_UPDATE:], y=data['Completed Capacity'][-GRAPH_UPDATE:], text='Completed Capacity', name='Completed Orders')
+            go.Bar(x=data.index, y=data['Completed Capacity'], text='Completed Capacity', name='Completed Orders')
         )
         completed_order_fig.add_trace(
-            go.Bar(x=data.index[-GRAPH_UPDATE:], y=data['Rejected Capacity'][-GRAPH_UPDATE:], text='Rejected Capacity', name='Rejected Capacity')
+            go.Bar(x=data.index, y=data['Rejected Capacity'], text='Rejected Capacity', name='Rejected Capacity')
         )
 
         completed_order_fig.update_layout(
             title_text='Capacity Evasion',
-            xaxis=dict(range=[min(data.index), max(data.index) +1]), yaxis=dict(range=[0, max(max(data['Completed Capacity']),max(data['Rejected Capacity'])) + 10])
+            xaxis=dict(range=[xAxisLowerRange(data.index), xAxisUpperRange(data.index) +1]), yaxis=dict(range=[0, max(0,max(data['Completed Capacity']),max(data['Rejected Capacity'])) + 10])
         )
         completed_order_graph = dcc.Graph(id = 'completed-orders-graph', figure = completed_order_fig)
-
         return completed_order_graph
 
     @app.callback(Output('completed-capacity-div', 'children'), [Input("map-update", "n_intervals")])
@@ -246,19 +257,18 @@ if RUN_SERVER:
         #Completed vs Rejected Capacity -> 
         completed_capacity_fig = go.Figure()
         completed_capacity_fig.add_trace(
-            go.Scatter(x=data.index[-GRAPH_UPDATE:], y=data['Completed Services'][-GRAPH_UPDATE:], fill='tozeroy', text='Completed Orders', name='Completed Orders')
+            go.Scatter(x=data.index, y=data['Completed Services'], fill='tozeroy', text='Completed Orders', name='Completed Orders')
         )
         completed_capacity_fig.add_trace(
-            go.Scatter(x=data.index[-GRAPH_UPDATE:], y=data['Rejected Services'][-GRAPH_UPDATE:], fill='tozeroy', text='Rejected Orders', name='Rejected Orders')
+            go.Scatter(x=data.index, y=data['Rejected Services'], fill='tozeroy', text='Rejected Orders', name='Rejected Orders')
         )
 
         completed_capacity_fig.update_layout(
             title_text='Order Evasion',
-            xaxis=dict(range=[max(0, max(data.index) - GRAPH_UPDATE + 2), max(data.index[-GRAPH_UPDATE:])]), yaxis=dict(range=[0, max(max(data['Completed Services']),max(data['Rejected Services'])) + 10])
+            xaxis=dict(range=[xAxisLowerRange(data.index), xAxisUpperRange(data.index)]), yaxis=dict(range=[0, max(0,max(data['Completed Services']),max(data['Rejected Services'])) + 10])
         )  
         completed_capacity_graph = dcc.Graph(id = 'completed-capacity-graph', figure = completed_capacity_fig)
         #END GRAPHS
-
         return completed_capacity_graph
 
     #MAP CALLBACK
@@ -314,15 +324,13 @@ if RUN_SERVER:
                     zoom=9
                 )
         )
-
         map_graph = dcc.Graph(id='plot', figure=map_fig)
-
         return map_graph
     
     # NODES GRAPHS
 
     # Node Dropdown Input
-    @app.callback(Output('node-capacity-graph', 'children'), [Input("map-update", "n_intervals")], [State("nodes-list", "value")])
+    @app.callback(Output('node-capacity-graph', 'children'), [Input("map-update", "n_intervals"), Input("nodes-list", "value")])
     def nodeCapacityGraph(interval,node):
         if type(node) == str:
             data = getNodesInfo(node)
@@ -336,19 +344,15 @@ if RUN_SERVER:
             )
             node_capacity_fig.update_layout(
                 title_text=f'Node Capacity @{model.clock}',
-                xaxis=dict(range=[min(data.index.get_level_values(0)), max(data.index.get_level_values(0))]), yaxis=dict(range=[0, max(data['Full Capacity']) + 2])
+                xaxis=dict(range=[xAxisLowerRange(data.index.get_level_values(0)), xAxisUpperRange(data.index.get_level_values(0))]), yaxis=dict(range=[0, max(0,max(data['Full Capacity'])) + 2])
             )
             node_capacity_graph = dcc.Graph(id='node-capacity-graph', figure=node_capacity_fig)
-
             return node_capacity_graph
-
         else:
             pass
 
-
-
     #Node Balance Pie Chart
-    @app.callback(Output('node-balance-graph', 'children'), [Input("map-update", "n_intervals")], [State("nodes-list", "value")])
+    @app.callback(Output('node-balance-graph', 'children'), [Input("map-update", "n_intervals"), Input("nodes-list", "value")])
     def NodeBalanceGraph(interval,node):
         if type(node) == str:
             data = getNodesInfo(node)
@@ -366,10 +370,10 @@ if RUN_SERVER:
             balance_pie_fig.update_layout(title_text=f"Balance @{model.clock}")
             node_balance_graph = dcc.Graph(id='node-balance-graph', figure=balance_pie_fig)
             return node_balance_graph
-
         else:
             pass
     
+    # Node Stats Widget
     @app.callback(Output('node-stats', 'children'), [Input("map-update", "n_intervals"), Input("nodes-list", "value")])
     def updateNodeStats(interval,node):
         if type(node) == str:
@@ -398,8 +402,15 @@ if RUN_SERVER:
 
             quantities = html.Div(className='textBox', children=[
                             html.P(f'Processed Items: {processed_quantities}')
+                            #html.Small('in services completed')
                             ], style={"width": "20%", "display": "inline-block", "margin-right": "-4 px", "box-sizing": "border-box", "padding": "1%"})
             stats.append(quantities)
+
+            tasks_completed = html.Div(className='textBox', children=[
+                            html.P(f'Completed tasks: {data["Completed Tasks"][-1]}')
+                            ], style={"width": "20%", "display": "inline-block", "margin-right": "-4 px", "box-sizing": "border-box", "padding": "1%"})
+            stats.append(tasks_completed)
+
 
             rev_per_step = html.Div(className='textBox', children=[
                             html.P(f'Avg Revenue per step: {avg_rev_per_step}')
@@ -410,7 +421,6 @@ if RUN_SERVER:
                             html.P(f'Avg Revenue per unit: {avg_rev_per_unit}')
                             ], style={"width": "20%", "display": "inline-block", "margin-right": "-4 px", "box-sizing": "border-box", "padding": "1%"})
             stats.append(rev_per_unit)
-
             return stats
 
     if __name__ == '__main__':
