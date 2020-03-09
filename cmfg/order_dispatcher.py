@@ -178,7 +178,6 @@ def manageServiceRequests(self,service):
             archive_tasks.append(node.tasks_archive)
             queueing_tasks.append(node.tasks_queue)
 
-
     for running_task in running_tasks:
         if running_task != []:
             if DEBUG:

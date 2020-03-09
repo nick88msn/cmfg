@@ -14,6 +14,7 @@ import datetime as dt
 from cmfg.model import SMfgModel, LAST_STEP, no_nodes, model_height, model_width
 
 import cProfile
+import pandas as pd
 
 RUN_SERVER = True
 
@@ -99,6 +100,29 @@ if RUN_SERVER:
             data = df.loc[df['ID'] == node]
         return data
 
+    def getServices():
+        service_requests = [s.order_register for s in model.order_schedule.agents]
+        service_queue = [s.order_queue for s in model.order_schedule.agents]
+        service_archived = [s.order_archive for s in model.order_schedule.agents]
+        services = service_requests[0] + service_queue[0] + service_archived[0]
+        df = pd.DataFrame(columns=['service_id', 'task_type', 'quantity','unit_price', 'logistics_cost','machine_time','delivery','status','schedule','registration_time','enter_queue_time', 'start_processing_time', 'end_processing_time' ])
+        df['service_id'] = [list(a.keys())[0] for a in services]
+        df['task_type'] = [lis[list(lis.keys())[0]]['task_type'] for lis in services]
+        df['quantity'] = [lis[list(lis.keys())[0]]['quantity'] for lis in services]
+        df['unit_price'] = [lis[list(lis.keys())[0]]['unit_price'] for lis in services]
+        df['logistics_cost'] = [lis[list(lis.keys())[0]]['logistics_cost'] for lis in services]
+        df['machine_time'] = [lis[list(lis.keys())[0]]['machine_time'] for lis in services]
+        df['delivery'] = [lis[list(lis.keys())[0]]['delivery'] for lis in services]
+        df['status'] = [lis[list(lis.keys())[0]]['status'] for lis in services]
+        df['schedule'] = [lis[list(lis.keys())[0]]['schedule'] for lis in services]
+        df['registration_time'] = [lis[list(lis.keys())[0]]['registration_time'] for lis in services]
+        df['enter_queue_time'] = [lis[list(lis.keys())[0]]['enter_queue_time'] for lis in services]
+        df['start_processing_time'] = [lis[list(lis.keys())[0]]['start_processing_time'] for lis in services]
+        df['end_processing_time'] = [lis[list(lis.keys())[0]]['end_processing_time'] for lis in services]
+
+        return df
+
+
     #Frontend
     app.layout = html.Div(children=[
         #TITLE
@@ -137,7 +161,8 @@ if RUN_SERVER:
                 html.Div(id='node-capacity-graph', children=[]),
                 html.Div(id='node-tasks-graph', children=[]),
                 html.Div(id='node-balance-graph', children=[])
-            ])
+            ]),
+            dcc.Tab(label="Services", children=[])
         ]),
         dcc.Interval(id='graph-update', interval= UPDATE_INTERVAL * 1000),
         # dummy signal value to trigger mesa model step
@@ -452,5 +477,5 @@ else:
     while True:
         #cProfile.run("model.step()")
         model.step()
-        node_managers = model.datacollector.get_agent_vars_dataframe()
-        print(node_managers.tail())
+        #node_managers = model.datacollector.get_agent_vars_dataframe()
+        #print(node_managers.tail())

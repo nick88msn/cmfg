@@ -77,7 +77,7 @@ class SMfgModel(Model):
                 'Current Service Waiting': a.getNodeCurrentServiceWaiting,
                 'Tasks queue': a.getNodeTasksQueue,
                 'Running Tasks': a.getNodeRunningTasks,
-                'Completed Tasks': a.getNodeCompletedTasks
+                'Completed Tasks': a.getNodeCompletedTasks,
                 })
 
         print("::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
