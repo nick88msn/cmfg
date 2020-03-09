@@ -135,6 +135,7 @@ if RUN_SERVER:
                 dcc.Dropdown(id='nodes-list', options=[{'label': s, 'value': s} for s in node_names], value=node_names, multi=False),
                 html.Div(id='node-stats', children=[]),
                 html.Div(id='node-capacity-graph', children=[]),
+                html.Div(id='node-tasks-graph', children=[]),
                 html.Div(id='node-balance-graph', children=[])
             ])
         ]),
@@ -226,7 +227,7 @@ if RUN_SERVER:
 
         order_fig.update_layout(
             title_text='Order Requests',
-            xaxis=dict(range=[xAxisLowerRange(data.index), xAxisUpperRange(data.index) + 1]), yaxis=dict(range=[0, max(0,max(data['Service Orders']),max(data['Service Queued']),max(data['Running Services'])) + 10])
+            xaxis=dict(range=[xAxisLowerRange(data.index) - 1, xAxisUpperRange(data.index) + 1]), yaxis=dict(range=[0, max(0,max(data['Service Orders']),max(data['Service Queued']),max(data['Running Services'])) + 10])
         )
 
         order_analysis_graph = dcc.Graph(id = 'order-analysis-graph', figure = order_fig)
@@ -246,7 +247,7 @@ if RUN_SERVER:
 
         completed_order_fig.update_layout(
             title_text='Capacity Evasion',
-            xaxis=dict(range=[xAxisLowerRange(data.index), xAxisUpperRange(data.index) +1]), yaxis=dict(range=[0, max(0,max(data['Completed Capacity']),max(data['Rejected Capacity'])) + 10])
+            xaxis=dict(range=[xAxisLowerRange(data.index) -1 , xAxisUpperRange(data.index) +1]), yaxis=dict(range=[0, max(0,max(data['Completed Capacity']),max(data['Rejected Capacity'])) + 10])
         )
         completed_order_graph = dcc.Graph(id = 'completed-orders-graph', figure = completed_order_fig)
         return completed_order_graph
@@ -348,6 +349,27 @@ if RUN_SERVER:
             )
             node_capacity_graph = dcc.Graph(id='node-capacity-graph', figure=node_capacity_fig)
             return node_capacity_graph
+        else:
+            pass
+
+    @app.callback(Output('node-tasks-graph', 'children'), [Input("map-update", "n_intervals"), Input("nodes-list", "value")])
+    def nodeTasksGraph(interval,node):
+        if type(node) == str:
+            data = getNodesInfo(node)
+            #Node Capacity Figure
+            node_tasks_fig = go.Figure()
+            node_tasks_fig.add_trace(
+                go.Scatter(x=data.index.get_level_values(0), y=data['Tasks queue'], fill='tozeroy', text='Node Tasks queue', name='Node Tasks queue')
+            )
+            node_tasks_fig.add_trace(
+                go.Scatter(x=data.index.get_level_values(0), y=data['Running Tasks'], fill='tozeroy', text='Node Running Tasks', name='Node Running Tasks')
+            )
+            node_tasks_fig.update_layout(
+                title_text=f'Completed Tasks: {data["Completed Tasks"][-1]} @{model.clock}',
+                xaxis=dict(range=[xAxisLowerRange(data.index.get_level_values(0)), xAxisUpperRange(data.index.get_level_values(0))]), yaxis=dict(range=[0, max(0,max(max(data['Tasks queue']),max(data['Running Tasks']))) + 2])
+            )
+            node_tasks_graph = dcc.Graph(id='node-tasks-graph', figure=node_tasks_fig)
+            return node_tasks_graph
         else:
             pass
 
