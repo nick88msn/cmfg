@@ -12,8 +12,8 @@ DEBUG = False
 LAST_STEP = 30
 
 # Hyperparameters
-model_height = 20
-model_width = 20
+model_height = 20   #km
+model_width = 20    #km
 no_nodes = 50
 
 # Start of platform model
@@ -26,7 +26,8 @@ class SMfgModel(Model):
         # computing their next state and actions simultaneously.  
         # This needs to be done because each node's next state 
         # depends on the current state of all its neighbors 
-        # -- before they've changed.\
+        # -- before they've changed.
+        
         self.clock = 0
         self.last_step = LAST_STEP
         self.schedule = SimultaneousActivation(self)

@@ -1,25 +1,23 @@
 [[source]]
-name = "pypi"
 url = "https://pypi.org/simple"
 verify_ssl = true
-
-[dev-packages]
-pylint = "*"
+name = "pypi"
 
 [packages]
 pandas = "*"
 numpy = "*"
 matplotlib = "*"
-Mesa = "*"
 jupyter = "*"
 dash = "*"
 dash-renderer = "*"
 dash-html-components = "*"
 dash-core-components = "*"
 plotly = "*"
+Mesa = "*"
 Flask = "*"
 Flask-Caching = "*"
-bleach = "==3.1.1"
+
+[dev-packages]
 
 [requires]
-python_version = "3.6"
+python_version = "3.9"

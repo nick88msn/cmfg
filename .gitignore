@@ -3,3 +3,7 @@ cache-directory
 __pycache__
 cmfg/__pycache__
 .vscode
+.DS_STORE
+workspace.code-workspace
+Pipfile
+TODO.md

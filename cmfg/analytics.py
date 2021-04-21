@@ -116,7 +116,6 @@ def service_request_analysis(model):
     services_queued_capacity = 0
     services_capacity_rejected = 0
     services_capacity_completed = 0
-    #TODO è sbagliato calcolarlo come capacità dei servizi processati ma andrebbe calcolato come la somma dei task che stanno in running associati al servizio
     services_running_capacity = 0
     services_rejected = []
     services_running = []
