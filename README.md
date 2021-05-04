@@ -41,7 +41,7 @@ To run the server
 To run this project, you will need to add the following environment variable to your secrets.py file in the project root directory
 
 ```python
-    MAPBOX_PUBLIC_TOKEN = "YOUR_MAPBOX_API"
+MAPBOX_PUBLIC_TOKEN = "YOUR_MAPBOX_API"
 ```
   
 ## License
