@@ -30,9 +30,11 @@ Download the full compiled thesis from UNISA repo: (still not public).
 
 ## Deployment
 
-To deploy this project run
+To deploy this project run:
 
 ```shell
+  git clone https://github.com/nick88msn/cmfg.git
+  #use conda env or pipenv instead of installing globally
   pip install -r requirements.txt
 ```
 
