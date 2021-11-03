@@ -56,7 +56,7 @@ def analyze_service(self,service):
     distance = get_distance(self.pos,service[service_id]['delivery'])
     logistics_cost = distance * service[service_id]['unit_price'] * service[service_id]['logistics_cost']
     #manufacturing_price = service[service_id]['unit_price'] - logistics_cost
-    manufacturing_cost = self.mfg_costs * service[service_id]['quantity']['machine_time']
+    manufacturing_cost = self.mfg_costs * service[service_id]['quantity'] * service[service_id]['machine_time']
     margin = service[service_id]['unit_price'] - manufacturing_cost - logistics_cost
     if  margin/service[service_id]['unit_price'] >= self.min_margin:
         if DEBUG:
