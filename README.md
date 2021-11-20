@@ -16,17 +16,18 @@ Contact: Nicola Mastrandrea (@nick88msn, nmastrandrea@unisa.it)
 Please cite using the following BibTex entry:
 
 ```
-@phdthesis{mastrandrea2020smfg,
+@phdthesis{mastrandrea2021smfg,
     title={Scattered Manufacturing: Developing a Cloud Manufacturing Framework based on autonomous resources},
     author={Mastrandrea, Nicola},
     school={University of Salerno, Itlay},
     year=2021,
-    month=05,
+    month=11,
     note={arXiv:}
 }
 ```
 
 Download the full compiled thesis from UNISA repo: (still not public).
+Download the full compiled thesis from Github: (WIP) [Thesis Latex version](https://github.com/nick88msn/scattered-manufacturing)
 
 ## Deployment
 
