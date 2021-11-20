@@ -2,7 +2,7 @@
 
 Repository for Nicola Mastrandrea's PhD Thesis.
 
-Current Status: Referees Revision.
+Current Status: Dissertation Passed, Ready to be published.
 
 Contact: Nicola Mastrandrea (@nick88msn, nmastrandrea@unisa.it)
 
